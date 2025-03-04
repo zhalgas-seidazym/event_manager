@@ -30,7 +30,14 @@ class Ticket(models.Model):
         return f"Ticket: {self.user.username} -> {self.event.title}"
 
 class Category(models.Model):
+    STATUS_CHOICES = [
+        ('pending', 'Pending Approval'),
+        ('approved', 'Approved'),
+        ('rejected', 'Rejected'),
+    ]
+
     name = models.CharField(max_length=100, unique=True)
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='pending')  # Default: needs approval
 
     def __str__(self):
         return self.name
