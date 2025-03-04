@@ -1,0 +1,4 @@
+create urls
+create views for create event, home page, update event, update user, delete event
+create templates
+create forms for event create, update, user update
