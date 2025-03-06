@@ -2,6 +2,7 @@ from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
+from django.db.models import Q
 from django.http import HttpResponse
 from django.shortcuts import render, redirect, get_object_or_404
 
@@ -72,7 +73,7 @@ def event(request, pk):
         )
         return redirect('event_detail', pk=pk)
 
-    return render(request, 'eventify/event.html')
+    return render(request, 'eventify/event.html', {'event': event})
 
 @login_required(login_url='login')
 def eventCreateUpdate(request, pk = None):
@@ -120,3 +121,35 @@ def eventCreateUpdate(request, pk = None):
             'instance': event,
         }
     )
+
+@login_required(login_url='login')
+def eventDelete(request, pk):
+    event = get_object_or_404(Event, pk=pk)
+
+    if request.user != event.organizer:
+        return HttpResponse("Access Denied")
+
+    if request.method == 'POST':
+        event.delete()
+        return redirect('home')
+    return render(request, 'eventify/delete_event.html')
+
+def home(request):
+    q = request.GET.get('q', '')
+    categories = Category.objects.filter(status='approved')
+
+    events = Event.objects.filter(
+        Q(status='approved') &
+        (
+            Q(title__icontains=q) |
+            Q(description__icontains=q) |
+            Q(location__icontains=q) |
+            Q(categories__name__icontains=q)
+        ) &
+        Q(categories__status__icontains='approved')
+    ).distinct()
+
+    return render(request, 'eventify/home.html', {
+        'categories': categories,
+        'events': events,
+    })
