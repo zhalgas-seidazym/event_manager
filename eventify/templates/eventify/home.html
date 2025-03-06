@@ -1,10 +1,14 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Title</title>
-</head>
-<body>
-
-</body>
-</html>
+{% comment %} Home template (eventify/home.html) {% endcomment %}
+{% extends 'eventify/base.html' %}
+{% block content %}
+<h1>Events</h1>
+<form method="GET">
+    <input type="text" name="q" placeholder="Search..." value="{{ request.GET.q }}">
+    <button type="submit">Search</button>
+</form>
+<ul>
+    {% for event in events %}
+    <li><a href="{% url 'event_detail' event.pk %}">{{ event.title }}</a></li>
+    {% endfor %}
+</ul>
+{% endblock %}

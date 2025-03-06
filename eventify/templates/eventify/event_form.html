@@ -1,10 +1,10 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Title</title>
-</head>
-<body>
-
-</body>
-</html>
+{% comment %} Event Form template (eventify/event_form.html) {% endcomment %}
+{% extends 'eventify/base.html' %}
+{% block content %}
+<h1>{% if instance %}Edit Event{% else %}Create Event{% endif %}</h1>
+<form method="POST">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit">Save</button>
+</form>
+{% endblock %}
