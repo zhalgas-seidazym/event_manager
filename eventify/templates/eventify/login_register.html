@@ -1,10 +1,33 @@
-{% comment %} Login & Register template (eventify/login_register.html) {% endcomment %}
 {% extends 'eventify/base.html' %}
+
+<!-- login_register.html -->
 {% block content %}
-<h2>{% if page == 'login' %}Login{% else %}Register{% endif %}</h2>
-<form method="POST">
-    {% csrf_token %}
-    {{ form.as_p }}
-    <button type="submit">Submit</button>
-</form>
+<div class="container mt-5">
+    <div class="card p-4">
+        {% if page == 'login' %}
+            <h2 class="mb-4">Login</h2>
+            <form method="POST">
+                {% csrf_token %}
+                <div class="mb-3">
+                    <label for="username" class="form-label">Username</label>
+                    <input type="text" class="form-control" name="username" required>
+                </div>
+                <div class="mb-3">
+                    <label for="password" class="form-label">Password</label>
+                    <input type="password" class="form-control" name="password" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Login</button>
+            </form>
+            <p class="mt-3">Don't have an account? <a href="{% url 'register' %}">Register</a></p>
+        {% else %}
+            <h2 class="mb-4">Register</h2>
+            <form method="POST">
+                {% csrf_token %}
+                {{ form.as_p }}
+                <button type="submit" class="btn btn-success">Register</button>
+            </form>
+            <p class="mt-3">Already have an account? <a href="{% url 'login' %}">Login</a></p>
+        {% endif %}
+    </div>
+</div>
 {% endblock %}

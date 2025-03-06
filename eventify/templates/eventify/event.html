@@ -1,14 +1,31 @@
-{% comment %} Event Detail template (eventify/event.html) {% endcomment %}
 {% extends 'eventify/base.html' %}
+
 {% block content %}
-<h1>{{ event.title }}</h1>
-<p>{{ event.description }}</p>
-<p>Location: {{ event.location }}</p>
-<p>Date: {{ event.date }}</p>
-{% if request.user.is_authenticated %}
-    <form method="POST">
-        {% csrf_token %}
-        <button type="submit">Book Ticket</button>
-    </form>
-{% endif %}
+<div class="container mt-4">
+    <h2>{{ event.title }}</h2>
+    <p><strong>Date:</strong> {{ event.date }}</p>
+    <p><strong>Location:</strong> {{ event.location }}</p>
+    <p>{{ event.description }}</p>
+
+    <!-- Отображение категорий с проверкой статуса -->
+    <p><strong>Categories:</strong>
+        {% for category in event.categories.all %}
+            {% if category.status == "approved" %}
+                <span class="badge bg-primary">{{ category.name }}</span>
+            {% endif %}
+        {% endfor %}
+    </p>
+
+    {% if user.is_authenticated %}
+        <form method="POST">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-success">Book Ticket</button>
+        </form>
+    {% endif %}
+
+    <!-- Кнопка редактирования видна только организатору события -->
+    {% if request.user == event.organizer %}
+        <a href="{% url 'event_update' event.pk %}" class="btn btn-warning mt-3">Edit Event</a>
+    {% endif %}
+</div>
 {% endblock %}

@@ -1,10 +1,47 @@
-{% comment %} Event Form template (eventify/event_form.html) {% endcomment %}
 {% extends 'eventify/base.html' %}
+
 {% block content %}
-<h1>{% if instance %}Edit Event{% else %}Create Event{% endif %}</h1>
-<form method="POST">
-    {% csrf_token %}
-    {{ form.as_p }}
-    <button type="submit">Save</button>
-</form>
+<div class="container mt-4">
+    <h2>{% if instance %}Edit Event{% else %}Create Event{% endif %}</h2>
+
+    <form method="POST">
+        {% csrf_token %}
+
+        <div class="mb-3">
+            {{ form.title.label_tag }}
+            {{ form.title }}
+        </div>
+
+        <div class="mb-3">
+            {{ form.description.label_tag }}
+            {{ form.description }}
+        </div>
+
+        <div class="mb-3">
+            {{ form.location.label_tag }}
+            {{ form.location }}
+        </div>
+
+        <div class="mb-3">
+            {{ form.date.label_tag }}
+            {{ form.date }}
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Categories</label>
+            <div class="form-check">
+                {% for checkbox in form.categories %}
+                    <div class="form-check">
+                        {{ checkbox.tag }}  <!-- Сам чекбокс -->
+                        <label class="form-check-label">{{ checkbox.choice_label }}</label>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <input type="text" name="new_categories" class="form-control mt-2" placeholder="Enter new categories, separated by commas">
+
+        <button type="submit" class="btn btn-primary mt-3">Save</button>
+    </form>
+</div>
 {% endblock %}

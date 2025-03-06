@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
@@ -63,7 +65,7 @@ def registerController(request):
 
 def event(request, pk):
     event = get_object_or_404(Event, pk=pk)
-    if event.status != 'approved':
+    if event.status != 'approved' and event.organizer != request.user:
         return HttpResponse('Access denied')
 
     if request.method == "POST":
@@ -98,6 +100,8 @@ def eventCreateUpdate(request, pk = None):
                 topic, created_at = Category.objects.get_or_create(name=category)
                 categories.append(topic)
             updated_event = form.save(commit=False)
+            updated_event.organizer = request.user
+            updated_event.status = 'pending'
             updated_event.save()
             updated_event.categories.set(categories)
             if event is not None:
@@ -136,18 +140,19 @@ def eventDelete(request, pk):
 
 def home(request):
     q = request.GET.get('q', '')
+    categ = request.GET.get('category', '')
+    print(categ)
     categories = Category.objects.filter(status='approved')
 
-    events = Event.objects.filter(
-        Q(status='approved') &
-        (
-            Q(title__icontains=q) |
-            Q(description__icontains=q) |
-            Q(location__icontains=q) |
-            Q(categories__name__icontains=q)
-        ) &
-        Q(categories__status__icontains='approved')
-    ).distinct()
+    query = Q(status='approved') & Q(date__gt=datetime.now())
+
+    if q:
+        query &= Q(title__icontains=q) | Q(description__icontains=q) | Q(location__icontains=q)
+
+    if categ:
+        query &= Q(categories__name__icontains=categ)
+
+    events = Event.objects.filter(query).distinct()
 
     return render(request, 'eventify/home.html', {
         'categories': categories,
