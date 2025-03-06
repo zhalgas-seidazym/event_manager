@@ -28,6 +28,7 @@ class EventForm(forms.ModelForm):
         }
 
     categories = forms.ModelMultipleChoiceField(
-        queryset=Category.objects.filter(status='approved'),  # Фильтруем только approved
-        widget=forms.CheckboxSelectMultiple(attrs={'class': 'form-check-input'}),  # Отображение в виде чекбоксов
+        queryset=Category.objects.filter(status='approved'),
+        widget=forms.CheckboxSelectMultiple(attrs={'class': 'form-check-input'}),
+        required=False
     )

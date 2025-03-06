@@ -1,0 +1,37 @@
+{% extends 'eventify/base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Profile</h2>
+
+    <h3 class="mt-4">My Tickets</h3>
+    <ul class="list-group">
+        {% for ticket in user_tickets %}
+            <li class="list-group-item">
+                <strong>{{ ticket.event.title }}</strong> ({{ ticket.event.date }})
+                <br>
+                <span class="text-muted">{{ ticket.event.location }}</span>
+            </li>
+        {% empty %}
+            <li class="list-group-item text-muted">No tickets yet.</li>
+        {% endfor %}
+    </ul>
+
+    <h3 class="mt-4">My Created Events</h3>
+    <ul class="list-group">
+        {% for event in created_events %}
+            <li class="list-group-item">
+                <strong>{{ event.title }}</strong> ({{ event.date }})
+                <br>
+                <span class="text-muted">{{ event.location }}</span>
+                <br>
+                <a href="{% url 'event_detail' event.pk %}" class="btn btn-primary btn-sm mt-2">View</a>
+                <a href="{% url 'event_update' event.pk %}" class="btn btn-warning btn-sm mt-2">Edit</a>
+                <a href="{% url 'event_delete' event.pk %}" class="btn btn-danger btn-sm mt-2">Delete</a>
+            </li>
+        {% empty %}
+            <li class="list-group-item text-muted">No created events.</li>
+        {% endfor %}
+    </ul>
+</div>
+{% endblock %}

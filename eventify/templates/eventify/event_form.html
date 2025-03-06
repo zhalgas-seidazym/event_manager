@@ -4,7 +4,7 @@
 <div class="container mt-4">
     <h2>{% if instance %}Edit Event{% else %}Create Event{% endif %}</h2>
 
-    <form method="POST">
+    <form method="POST" id="eventForm">
         {% csrf_token %}
 
         <div class="mb-3">
@@ -29,7 +29,7 @@
 
         <div class="mb-3">
             <label class="form-label">Categories</label>
-            <div class="form-check">
+            <div class="form-check" id="categoryCheckboxes">
                 {% for checkbox in form.categories %}
                     <div class="form-check">
                         {{ checkbox.tag }}  <!-- Сам чекбокс -->
@@ -37,11 +37,28 @@
                     </div>
                 {% endfor %}
             </div>
+            <div class="text-danger d-none" id="categoryError">Please select at least one category or enter a new one.</div>
         </div>
 
-        <input type="text" name="new_categories" class="form-control mt-2" placeholder="Enter new categories, separated by commas">
+        <input type="text" name="new_categories" id="newCategoriesInput" class="form-control mt-2"
+               placeholder="Enter new categories, separated by commas">
 
         <button type="submit" class="btn btn-primary mt-3">Save</button>
     </form>
 </div>
+
+<script>
+    document.getElementById("eventForm").addEventListener("submit", function(event) {
+        let newCategories = document.getElementById("newCategoriesInput").value.trim();
+        let checkboxes = document.querySelectorAll("#categoryCheckboxes input[type='checkbox']");
+        let checked = Array.from(checkboxes).some(checkbox => checkbox.checked);
+
+        if (!newCategories && !checked) {
+            document.getElementById("categoryError").classList.remove("d-none");
+            event.preventDefault();
+        } else {
+            document.getElementById("categoryError").classList.add("d-none");
+        }
+    });
+</script>
 {% endblock %}

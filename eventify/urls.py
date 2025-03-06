@@ -5,6 +5,7 @@ urlpatterns = [
     path('login/', views.loginController, name = 'login'),
     path('logout/', views.logoutController, name = 'logout'),
     path('register/', views.registerController, name = 'register'),
+    path('profile/', views.profile, name = 'profile'),
 
     path('', views.home, name = 'home'),
     path('event/<int:pk>/', views.event, name='event_detail'),

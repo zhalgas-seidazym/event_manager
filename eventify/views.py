@@ -63,16 +63,37 @@ def registerController(request):
     context = {'form': form}
     return render(request, 'eventify/login_register.html', context)
 
+
+@login_required(login_url='login')
+def profile(request):
+    user = request.user
+
+    created_events = Event.objects.filter(organizer=user)
+
+    user_tickets = Ticket.objects.filter(
+        user=user,
+        event__status="approved",
+        event__categories__status="approved"
+    ).distinct()
+
+    context = {
+        "created_events": created_events,
+        "user_tickets": user_tickets,
+    }
+    return render(request, "eventify/profile.html", context)
+
 def event(request, pk):
     event = get_object_or_404(Event, pk=pk)
     if event.status != 'approved' and event.organizer != request.user:
         return HttpResponse('Access denied')
 
     if request.method == "POST":
-        Ticket.objects.create(
-            user = request.user,
-            event = event,
-        )
+        ticket = Ticket.objects.get(user=request.user, event=event)
+        if not ticket:
+            Ticket.objects.create(
+                user = request.user,
+                event = event,
+            )
         return redirect('event_detail', pk=pk)
 
     return render(request, 'eventify/event.html', {'event': event})
@@ -144,7 +165,7 @@ def home(request):
     print(categ)
     categories = Category.objects.filter(status='approved')
 
-    query = Q(status='approved') & Q(date__gt=datetime.now())
+    query = Q(status='approved') & Q(date__gt=datetime.now()) & Q(categories__status='approved')
 
     if q:
         query &= Q(title__icontains=q) | Q(description__icontains=q) | Q(location__icontains=q)
