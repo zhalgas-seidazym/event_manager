@@ -1,6 +1,5 @@
 from datetime import datetime
 from io import BytesIO
-
 from PIL import Image
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
@@ -176,9 +175,12 @@ def eventDelete(request, pk):
     return render(request, 'eventify/delete_event.html')
 
 def home(request):
-    q = request.GET.get('q', '')
-    categ = request.GET.get('category', '')
-    print(categ)
+    q = request.GET.get('q', request.session.get('q', ''))
+    categ = request.GET.get('category', request.session.get('category', ''))
+
+    request.session['q'] = q
+    request.session['category'] = categ
+
     categories = Category.objects.filter(status='approved')
 
     query = Q(status='approved') & Q(date__gt=datetime.now()) & Q(categories__status='approved')

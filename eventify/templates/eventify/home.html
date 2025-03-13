@@ -10,16 +10,23 @@
         {% endif %}
     </div>
 
+    <!-- Поле поиска с сохранением введённого текста -->
     <form method="GET" class="mb-4">
-        <input type="text" name="q" class="form-control" placeholder="Search events..." value="{{ request.GET.q }}">
+        <input type="text" name="q" class="form-control"
+               placeholder="Search events..." value="{{ request.session.q }}">
     </form>
 
     <div class="mb-3">
         <strong>Categories:</strong>
         <div class="d-flex flex-wrap gap-2 mt-2">
-            <a href="?category=" class="btn btn-outline-primary btn-sm">All</a>
+            <a href="?category=" class="btn {% if not request.session.category %}btn-primary{% else %}btn-outline-primary{% endif %} btn-sm">
+                All
+            </a>
             {% for category in categories %}
-                <a href="?category={{ category.name }}" class="btn btn-outline-primary btn-sm">{{ category.name }}</a>
+                <a href="?category={{ category.name }}"
+                   class="btn {% if request.session.category == category.name %}btn-primary{% else %}btn-outline-primary{% endif %} btn-sm">
+                    {{ category.name }}
+                </a>
             {% endfor %}
         </div>
     </div>
