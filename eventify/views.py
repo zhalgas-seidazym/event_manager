@@ -2,7 +2,7 @@ from datetime import datetime
 
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, permission_required
 from django.contrib.auth.models import User
 from django.db.models import Q
 from django.http import HttpResponse
@@ -98,6 +98,7 @@ def event(request, pk):
 
     return render(request, 'eventify/event.html', {'event': event})
 
+@permission_required(['eventify.can_change_event', 'eventify.can_add_event'])
 @login_required(login_url='login')
 def eventCreateUpdate(request, pk = None):
     if pk is not None:
@@ -147,6 +148,7 @@ def eventCreateUpdate(request, pk = None):
         }
     )
 
+@permission_required('eventify.can_delete_event')
 @login_required(login_url='login')
 def eventDelete(request, pk):
     event = get_object_or_404(Event, pk=pk)
