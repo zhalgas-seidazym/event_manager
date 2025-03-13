@@ -5,7 +5,3 @@ venv
 ./media
 /media
 media
-
-*/migrations
-./*/migrations
-/*/migrations
