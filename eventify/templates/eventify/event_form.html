@@ -4,7 +4,7 @@
 <div class="container mt-4">
     <h2>{% if instance %}Edit Event{% else %}Create Event{% endif %}</h2>
 
-    <form method="POST" id="eventForm">
+    <form method="POST" id="eventForm" enctype="multipart/form-data">
         {% csrf_token %}
 
         <div class="mb-3">
@@ -15,6 +15,11 @@
         <div class="mb-3">
             {{ form.description.label_tag }}
             {{ form.description }}
+        </div>
+
+        <div class="mb-3">
+            {{ form.cover.label_tag }}
+            {{ form.cover }}
         </div>
 
         <div class="mb-3">
