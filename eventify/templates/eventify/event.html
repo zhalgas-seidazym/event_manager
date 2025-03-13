@@ -3,6 +3,20 @@
 {% block content %}
 <div class="container mt-4">
     <h2>{{ event.title }}</h2>
+
+    <!-- Блок изображения -->
+    <div class="mb-3">
+        {% if event.cover %}
+            <img src="{{ event.cover.url }}" alt="Event Cover" class="img-fluid rounded shadow"
+                 style="max-width: 100%; height: auto;">
+        {% else %}
+            <div class="bg-light text-muted d-flex align-items-center justify-content-center"
+                 style="width: 100%; height: 200px; border: 1px solid #ddd;">
+                Image does not exist
+            </div>
+        {% endif %}
+    </div>
+
     <p><strong>Date:</strong> {{ event.date }}</p>
     <p><strong>Location:</strong> {{ event.location }}</p>
     <p>{{ event.description }}</p>
@@ -16,7 +30,8 @@
         {% endfor %}
     </p>
 
-    {% if user.is_authenticated %}
+    <!-- Кнопка бронирования билета (если пользователь не забронировал) -->
+    {% if user.is_authenticated and not has_ticket %}
         <form method="POST">
             {% csrf_token %}
             <button type="submit" class="btn btn-success">Book Ticket</button>

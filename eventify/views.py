@@ -1,9 +1,11 @@
 from datetime import datetime
-
+from io import BytesIO
+from PIL import Image
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, permission_required
 from django.contrib.auth.models import User
+from django.core.files.images import ImageFile
 from django.db.models import Q
 from django.http import HttpResponse
 from django.shortcuts import render, redirect, get_object_or_404
@@ -84,20 +86,20 @@ def profile(request):
 
 def event(request, pk):
     event = get_object_or_404(Event, pk=pk)
+    has_ticket = None
     if event.status != 'approved' and event.organizer != request.user:
         return HttpResponse('Access denied')
 
     if request.method == "POST":
-        ticket = Ticket.objects.get(user=request.user, event=event)
-        if not ticket:
-            Ticket.objects.create(
-                user = request.user,
-                event = event,
-            )
+        Ticket.objects.get_or_create(user=request.user, event=event)
         return redirect('event_detail', pk=pk)
 
-    return render(request, 'eventify/event.html', {'event': event})
+    if request.user.is_authenticated:
+        has_ticket = Ticket.objects.filter(user=request.user, event = event)
 
+    return render(request, 'eventify/event.html', {'event': event, 'has_ticket': has_ticket})
+
+@permission_required(['eventify.can_change_event', 'eventify.can_add_event'])
 @login_required(login_url='login')
 def eventCreateUpdate(request, pk = None):
     if pk is not None:
@@ -110,7 +112,7 @@ def eventCreateUpdate(request, pk = None):
     method = request.method
 
     if method == "POST":
-        form = EventForm(request.POST, instance=event)
+        form = EventForm(request.POST, request.FILES, instance=event)
 
         if form.is_valid():
             categories = []
@@ -120,9 +122,21 @@ def eventCreateUpdate(request, pk = None):
             for category in [c.strip() for c in request.POST.get('new_categories').split(",") if c.strip()]:
                 topic, created_at = Category.objects.get_or_create(name=category)
                 categories.append(topic)
+
+            cover = form.cleaned_data.get("cover")
+
             updated_event = form.save(commit=False)
             updated_event.organizer = request.user
             updated_event.status = 'pending'
+
+            if cover and not hasattr(cover, "path"):
+                image = Image.open(cover)
+                image.thumbnail((300, 300))
+                image_data = BytesIO()
+                image.save(fp=image_data, format=cover.image.format)
+                image_file = ImageFile(image_data)
+                updated_event.cover.save(cover.name, image_file)
+
             updated_event.save()
             updated_event.categories.set(categories)
             if event is not None:
@@ -147,6 +161,7 @@ def eventCreateUpdate(request, pk = None):
         }
     )
 
+@permission_required('eventify.can_delete_event')
 @login_required(login_url='login')
 def eventDelete(request, pk):
     event = get_object_or_404(Event, pk=pk)
@@ -160,9 +175,12 @@ def eventDelete(request, pk):
     return render(request, 'eventify/delete_event.html')
 
 def home(request):
-    q = request.GET.get('q', '')
-    categ = request.GET.get('category', '')
-    print(categ)
+    q = request.GET.get('q', request.session.get('q', ''))
+    categ = request.GET.get('category', request.session.get('category', ''))
+
+    request.session['q'] = q
+    request.session['category'] = categ
+
     categories = Category.objects.filter(status='approved')
 
     query = Q(status='approved') & Q(date__gt=datetime.now()) & Q(categories__status='approved')

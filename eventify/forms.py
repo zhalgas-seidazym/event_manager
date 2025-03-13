@@ -15,7 +15,7 @@ class MyUserCreationForm(UserCreationForm):
 class EventForm(forms.ModelForm):
     class Meta:
         model = Event
-        fields = ['title', 'description', 'location', 'date', 'categories']
+        fields = ['title', 'description', 'location', 'date', 'categories', 'cover']
         widgets = {
             'date': forms.DateInput(
                 attrs={

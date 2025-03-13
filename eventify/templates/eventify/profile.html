@@ -7,10 +7,26 @@
     <h3 class="mt-4">My Tickets</h3>
     <ul class="list-group">
         {% for ticket in user_tickets %}
-            <li class="list-group-item">
-                <strong>{{ ticket.event.title }}</strong> ({{ ticket.event.date }})
-                <br>
-                <span class="text-muted">{{ ticket.event.location }}</span>
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center">
+                    <div class="me-3" style="width: 80px; height: 50px;">
+                        {% if ticket.event.cover %}
+                            <img src="{{ ticket.event.cover.url }}" alt="Event Cover"
+                                 class="img-thumbnail" style="width: 100%; height: 100%; object-fit: cover;">
+                        {% else %}
+                            <div class="bg-light text-muted d-flex align-items-center justify-content-center"
+                                 style="width: 100%; height: 100%; border: 1px solid #ddd;">
+                                No Image
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <strong>{{ ticket.event.title }}</strong> ({{ ticket.event.date }})
+                        <br>
+                        <span class="text-muted">{{ ticket.event.location }}</span>
+                    </div>
+                </div>
+                <a href="{% url 'event_detail' ticket.event.pk %}" class="btn btn-primary btn-sm">View</a>
             </li>
         {% empty %}
             <li class="list-group-item text-muted">No tickets yet.</li>
@@ -20,14 +36,34 @@
     <h3 class="mt-4">My Created Events</h3>
     <ul class="list-group">
         {% for event in created_events %}
-            <li class="list-group-item">
-                <strong>{{ event.title }}</strong> ({{ event.date }})
-                <br>
-                <span class="text-muted">{{ event.location }}</span>
-                <br>
-                <a href="{% url 'event_detail' event.pk %}" class="btn btn-primary btn-sm mt-2">View</a>
-                <a href="{% url 'event_update' event.pk %}" class="btn btn-warning btn-sm mt-2">Edit</a>
-                <a href="{% url 'event_delete' event.pk %}" class="btn btn-danger btn-sm mt-2">Delete</a>
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center">
+                    <div class="me-3" style="width: 80px; height: 50px;">
+                        {% if event.cover %}
+                            <img src="{{ event.cover.url }}" alt="Event Cover"
+                                 class="img-thumbnail" style="width: 100%; height: 100%; object-fit: cover;">
+                        {% else %}
+                            <div class="bg-light text-muted d-flex align-items-center justify-content-center"
+                                 style="width: 100%; height: 100%; border: 1px solid #ddd;">
+                                No Image
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <strong>{{ event.title }}</strong> ({{ event.date }})
+                        <br>
+                        <span class="text-muted">{{ event.location }}</span>
+                    </div>
+                </div>
+                <div>
+                    <a href="{% url 'event_detail' event.pk %}" class="btn btn-primary btn-sm">View</a>
+                    {% if perms.eventify.can_change_event %}
+                        <a href="{% url 'event_update' event.pk %}" class="btn btn-warning btn-sm">Edit</a>
+                    {% endif %}
+                    {% if perms.eventify.can_delete_event %}
+                        <a href="{% url 'event_delete' event.pk %}" class="btn btn-danger btn-sm">Delete</a>
+                    {% endif %}
+                </div>
             </li>
         {% empty %}
             <li class="list-group-item text-muted">No created events.</li>
