@@ -39,7 +39,7 @@
     {% endif %}
 
     <!-- Кнопка редактирования видна только организатору события -->
-    {% if request.user == event.organizer %}
+    {% if request.user == event.organizer and perms.eventify.can_change_event %}
         <a href="{% url 'event_update' event.pk %}" class="btn btn-warning mt-3">Edit Event</a>
     {% endif %}
 </div>
