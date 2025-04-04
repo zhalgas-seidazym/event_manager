@@ -5,195 +5,204 @@ from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required, permission_required
 from django.contrib.auth.models import User
+from django.contrib.auth.views import LogoutView
 from django.core.files.images import ImageFile
 from django.db.models import Q
-from django.http import HttpResponse
+from django.http import HttpResponse, Http404
 from django.shortcuts import render, redirect, get_object_or_404
+from django.views.generic import View, TemplateView, CreateView, UpdateView, DeleteView, DetailView, ListView
+from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 
 from .forms import MyUserCreationForm, EventForm
-from .models import *
+from .models import Event, Ticket, Category
 
 
-def loginController(request):
-    page = 'login'
-    if request.user.is_authenticated:
-        return redirect('home')
+# Login and Logout Views
 
-    if request.method == "POST":
+class LoginController(View):
+    template_name = 'eventify/login_register.html'
+
+    def get(self, request):
+        if request.user.is_authenticated:
+            return redirect('home')
+        return render(request, self.template_name, {'page': 'login'})
+
+    def post(self, request):
         username = request.POST.get('username').lower()
         password = request.POST.get('password')
 
         try:
-            User.objects.get(username = username)
+            User.objects.get(username=username)
         except:
             messages.error(request, 'User does not exist')
-        user = authenticate(request, username = username, password = password)
+            return render(request, self.template_name, {'page': 'login'})
+
+        user = authenticate(request, username=username, password=password)
 
         if user is not None:
             login(request, user)
             return redirect('home')
         else:
             messages.error(request, 'Invalid username or password')
+            return render(request, self.template_name, {'page': 'login'})
 
-    context = {'page': page}
-    return render(request, 'eventify/login_register.html', context)
+# Logout View (Using Django's built-in LogoutView)
+class LogoutController(LogoutView):
+    next_page = '/'
 
-@login_required(login_url='login')
-def logoutController(request):
-    logout(request)
-    return redirect('home')
+# Register View
 
-def registerController(request):
-    if request.user.is_authenticated:
-        return redirect('home')
+class RegisterController(View):
+    template_name = 'eventify/login_register.html'
 
-    page = 'register'
+    def get(self, request):
+        if request.user.is_authenticated:
+            return redirect('home')
+        form = MyUserCreationForm()
+        return render(request, self.template_name, {'form': form, 'page': 'register'})
 
-    form = MyUserCreationForm()
-    if request.method == "POST":
+    def post(self, request):
         form = MyUserCreationForm(request.POST)
         if form.is_valid():
             user = form.save(commit=False)
             user.username = user.username.lower()
             user.save()
             login(request, user)
-
             return redirect('home')
         else:
             messages.error(request, 'An error occurred during registration')
+            return render(request, self.template_name, {'form': form, 'page': 'register'})
 
-    context = {'form': form}
-    return render(request, 'eventify/login_register.html', context)
+# Profile View
 
+class ProfileView(LoginRequiredMixin, TemplateView):
+    template_name = 'eventify/profile.html'
 
-@login_required(login_url='login')
-def profile(request):
-    user = request.user
+    def get_context_data(self, **kwargs):
+        user = self.request.user
+        created_events = Event.objects.filter(organizer=user)
+        user_tickets = Ticket.objects.filter(
+            user=user,
+            event__status="approved",
+            event__categories__status="approved"
+        ).distinct()
 
-    created_events = Event.objects.filter(organizer=user)
-
-    user_tickets = Ticket.objects.filter(
-        user=user,
-        event__status="approved",
-        event__categories__status="approved"
-    ).distinct()
-
-    context = {
-        "created_events": created_events,
-        "user_tickets": user_tickets,
-    }
-    return render(request, "eventify/profile.html", context)
-
-def event(request, pk):
-    event = get_object_or_404(Event, pk=pk)
-    has_ticket = None
-    if event.status != 'approved' and event.organizer != request.user:
-        return HttpResponse('Access denied')
-
-    if request.method == "POST":
-        Ticket.objects.get_or_create(user=request.user, event=event)
-        return redirect('event_detail', pk=pk)
-
-    if request.user.is_authenticated:
-        has_ticket = Ticket.objects.filter(user=request.user, event = event)
-
-    return render(request, 'eventify/event.html', {'event': event, 'has_ticket': has_ticket})
-
-@permission_required(['eventify.can_change_event', 'eventify.can_add_event'])
-@login_required(login_url='login')
-def eventCreateUpdate(request, pk = None):
-    if pk is not None:
-        event = get_object_or_404(Event, pk=pk)
-        if event.organizer != request.user:
-            return HttpResponse("Access Denied")
-    else:
-        event = None
-
-    method = request.method
-
-    if method == "POST":
-        form = EventForm(request.POST, request.FILES, instance=event)
-
-        if form.is_valid():
-            categories = []
-            for category in form.cleaned_data['categories']:
-                topic, created_at = Category.objects.get_or_create(name = category)
-                categories.append(topic)
-            for category in [c.strip() for c in request.POST.get('new_categories').split(",") if c.strip()]:
-                topic, created_at = Category.objects.get_or_create(name=category)
-                categories.append(topic)
-
-            cover = form.cleaned_data.get("cover")
-
-            updated_event = form.save(commit=False)
-            updated_event.organizer = request.user
-            updated_event.status = 'pending'
-
-            if cover and not hasattr(cover, "path"):
-                image = Image.open(cover)
-                image.thumbnail((300, 300))
-                image_data = BytesIO()
-                image.save(fp=image_data, format=cover.image.format)
-                image_file = ImageFile(image_data)
-                updated_event.cover.save(cover.name, image_file)
-
-            updated_event.save()
-            updated_event.categories.set(categories)
-            if event is not None:
-                messages.success(
-                    request, 'Event "{}" was created.'.format(updated_event)
-                )
-            else:
-                messages.success(
-                    request, 'Event "{}" was updated.'.format(updated_event)
-                )
-
-            return redirect('event_detail', updated_event.pk)
-    else:
-        form = EventForm(instance=event)
-
-    return render(
-        request,
-        'eventify/event_form.html',
-        {
-            'form': form,
-            'instance': event,
+        return {
+            'created_events': created_events,
+            'user_tickets': user_tickets,
         }
-    )
 
-@permission_required('eventify.can_delete_event')
-@login_required(login_url='login')
-def eventDelete(request, pk):
-    event = get_object_or_404(Event, pk=pk)
+# Event View (Detail)
 
-    if request.user != event.organizer:
-        return HttpResponse("Access Denied")
+class EventDetailView(DetailView):
+    model = Event
+    template_name = 'eventify/event.html'
+    context_object_name = 'event'
 
-    if request.method == 'POST':
-        event.delete()
-        return redirect('home')
-    return render(request, 'eventify/delete_event.html')
+    def get(self, request, *args, **kwargs):
+        event = self.get_object()
+        if event.status != 'approved' and event.organizer != request.user:
+            return HttpResponse('Access denied')
 
-def home(request):
-    q = request.GET.get('q', request.session.get('q', ''))
-    categ = request.GET.get('category', request.session.get('category', ''))
+        has_ticket = None
+        if request.user.is_authenticated:
+            has_ticket = Ticket.objects.filter(user=request.user, event=event)
 
-    request.session['q'] = q
-    request.session['category'] = categ
+        return self.render_to_response({'event': event, 'has_ticket': has_ticket})
 
-    categories = Category.objects.filter(status='approved')
+    def post(self, request, *args, **kwargs):
+        event = self.get_object()
+        Ticket.objects.get_or_create(user=request.user, event=event)
+        return redirect('event_detail', pk=event.pk)
 
-    query = Q(status='approved') & Q(date__gt=datetime.now()) & Q(categories__status='approved')
+# Event Create/Update View
 
-    if q:
-        query &= Q(title__icontains=q) | Q(description__icontains=q) | Q(location__icontains=q)
+# Event Create View (No UpdateView inheritance)
+class EventCreateUpdateView(PermissionRequiredMixin, LoginRequiredMixin, CreateView):
+    model = Event
+    form_class = EventForm
+    template_name = 'eventify/event_form.html'
+    permission_required = ['eventify.can_change_event', 'eventify.can_add_event']
 
-    if categ:
-        query &= Q(categories__name__icontains=categ)
+    def form_valid(self, form):
+        event = form.save(commit=False)
+        event.organizer = self.request.user
+        event.status = 'pending'
 
-    events = Event.objects.filter(query).distinct()
+        categories = []
+        for category in form.cleaned_data['categories']:
+            topic, created_at = Category.objects.get_or_create(name=category)
+            categories.append(topic)
 
-    return render(request, 'eventify/home.html', {
-        'categories': categories,
-        'events': events,
-    })
+        new_categories = [c.strip() for c in self.request.POST.get('new_categories').split(",") if c.strip()]
+        for category in new_categories:
+            topic, created_at = Category.objects.get_or_create(name=category)
+            categories.append(topic)
+
+        cover = form.cleaned_data.get("cover")
+
+        if cover and not hasattr(cover, "path"):
+            image = Image.open(cover)
+            image.thumbnail((300, 300))
+            image_data = BytesIO()
+            image.save(fp=image_data, format=cover.image.format)
+            image_file = ImageFile(image_data)
+            event.cover.save(cover.name, image_file)
+
+        event.save()
+        event.categories.set(categories)
+
+        messages.success(self.request, f'Event "{event}" was created.')
+
+        return redirect('event_detail', event.pk)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        if self.object:
+            context['instance'] = self.object
+        return context
+
+
+# Event Delete View
+
+class EventDeleteView(PermissionRequiredMixin, LoginRequiredMixin, DeleteView):
+    model = Event
+    template_name = 'eventify/delete_event.html'
+    success_url = '/'
+
+    permission_required = 'eventify.can_delete_event'
+
+    def get_object(self, queryset=None):
+        event = super().get_object(queryset)
+        if self.request.user != event.organizer:
+            raise Http404("Access Denied")
+        return event
+
+# Home View
+
+class HomeView(TemplateView):
+    template_name = 'eventify/home.html'
+
+    def get_context_data(self, **kwargs):
+        q = self.request.GET.get('q', self.request.session.get('q', ''))
+        categ = self.request.GET.get('category', self.request.session.get('category', ''))
+
+        self.request.session['q'] = q
+        self.request.session['category'] = categ
+
+        categories = Category.objects.filter(status='approved')
+
+        query = Q(status='approved') & Q(date__gt=datetime.now()) & Q(categories__status='approved')
+
+        if q:
+            query &= Q(title__icontains=q) | Q(description__icontains=q) | Q(location__icontains=q)
+
+        if categ:
+            query &= Q(categories__name__icontains=categ)
+
+        events = Event.objects.filter(query).distinct()
+
+        return {
+            'categories': categories,
+            'events': events,
+        }

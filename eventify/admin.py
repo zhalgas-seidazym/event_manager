@@ -1,5 +1,4 @@
 from django.contrib import admin
-
 from eventify.models import *
 
 # Register your models here.

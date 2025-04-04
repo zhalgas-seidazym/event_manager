@@ -8,3 +8,27 @@ services:
       - "8000:8000"
     volumes:
       - .:/app
+    depends_on:
+      - db
+    environment:
+      - DATABASE_NAME=mydb
+      - DATABASE_USER=admin
+      - DATABASE_PASSWORD=root
+      - DATABASE_HOST=postgres_db
+      - DATABASE_PORT=5432
+
+  db:
+    image: postgres:15
+    container_name: postgres_db
+    restart: always
+    environment:
+      POSTGRES_DB: mydb
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: root
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
