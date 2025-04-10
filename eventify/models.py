@@ -1,3 +1,4 @@
+from django.core.files.storage import default_storage
 from django.db import models
 from django.contrib.auth.models import User
 
@@ -14,7 +15,7 @@ class Event(models.Model):
     location = models.CharField(max_length=255)
     organizer = models.ForeignKey(User, on_delete=models.CASCADE, related_name="organized_events")
     categories = models.ManyToManyField('Category', related_name="events")
-    cover = models.ImageField(null=True, blank=True, upload_to="event_covers/")
+    cover = models.ImageField(null=True, blank=True, storage=default_storage)
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='pending')  # Default: needs approval
     created_at = models.DateTimeField(auto_now_add=True)
 
