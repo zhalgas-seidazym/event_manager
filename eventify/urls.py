@@ -2,15 +2,19 @@ from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 
 from . import views
-from .api_views import EventViewSet, CategoryViewSet, TicketViewSet, AuthView, ProfileView
+from .api_views import *
 
 router = DefaultRouter()
-router.register('events', EventViewSet)
-router.register('categories', CategoryViewSet)
-router.register('tickets', TicketViewSet, basename='ticket')
+router.register(r'events', EventViewSet, basename='event')
+router.register(r'tickets', TicketViewSet, basename='ticket')
 
 urlpatterns = [
     path('api/', include(router.urls)),
+    # Аутентификация
+    path('api/auth/register/', RegisterAPIView.as_view(), name='api-register'),
+    path('api/auth/login/', LoginAPIView.as_view(), name='api-login'),
+    path('api/auth/logout/', LogoutAPIView.as_view(), name='api-logout'),
+    path('api/auth/profile/', ProfileAPIView.as_view(), name='api-profile'),
 
     # Аутентификация
     path('login/', views.LoginView.as_view(), name='login'),

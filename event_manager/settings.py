@@ -31,7 +31,9 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'storages',  # S3/MinIO storage backend
     'rest_framework',
+    'rest_framework.authtoken',
     'eventify',  # Your custom app
+    'corsheaders',
 ]
 
 REST_FRAMEWORK = {
@@ -46,6 +48,7 @@ REST_FRAMEWORK = {
 }
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -57,6 +60,9 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = 'event_manager.urls'
 WSGI_APPLICATION = 'event_manager.wsgi.application'
+CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_CREDENTIALS = True
+CSRF_TRUSTED_ORIGINS = ["*"]
 
 # --------------------------
 # Database Configuration
@@ -64,10 +70,10 @@ WSGI_APPLICATION = 'event_manager.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.getenv('DATABASE_NAME', 'eventdb'),
-        'USER': os.getenv('DATABASE_USER', 'eventadmin'),
-        'PASSWORD': os.getenv('DATABASE_PASSWORD', 'securepassword'),
-        'HOST': os.getenv('DATABASE_HOST', 'db'),
+        'NAME': os.getenv('DATABASE_NAME', 'mydb'),
+        'USER': os.getenv('DATABASE_USER', 'admin'),
+        'PASSWORD': os.getenv('DATABASE_PASSWORD', 'root'),
+        'HOST': os.getenv('DATABASE_HOST', 'postgres_db'),
         'PORT': os.getenv('DATABASE_PORT', '5432'),
     }
 }
