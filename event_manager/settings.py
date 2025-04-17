@@ -62,7 +62,7 @@ ROOT_URLCONF = 'event_manager.urls'
 WSGI_APPLICATION = 'event_manager.wsgi.application'
 CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_CREDENTIALS = True
-CSRF_TRUSTED_ORIGINS = ["*"]
+# CSRF_TRUSTED_ORIGINS = ["*"]
 
 # --------------------------
 # Database Configuration
