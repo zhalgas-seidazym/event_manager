@@ -6,6 +6,7 @@ Elegantly configured for development with Docker
 import os
 from pathlib import Path
 import sys
+from datetime import timedelta
 
 # Flush output immediately for Docker logs
 sys.stdout.flush()
@@ -30,21 +31,39 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'storages',  # S3/MinIO storage backend
+    'drf_spectacular',
     'rest_framework',
     'rest_framework.authtoken',
     'eventify',  # Your custom app
     'corsheaders',
+    'django_extensions',  # ← добавь вот сюда
+    'debug_toolbar',
 ]
 
 REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': [
-        'rest_framework.authentication.SessionAuthentication',
-    ],
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ),
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticatedOrReadOnly',
     ],
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 10,
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+}
+
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
+    'AUTH_HEADER_TYPES': ('Bearer',),
+}
+
+# Add spectacular settings (optional)
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'Your API Title',
+    'DESCRIPTION': 'Detailed description of your API',
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,  # Set to True if you want to serve the schema too
 }
 
 MIDDLEWARE = [
@@ -56,13 +75,23 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'debug_toolbar.middleware.DebugToolbarMiddleware',
+]
+
+DEBUG_TOOLBAR_CONFIG = {
+    "SHOW_TOOLBAR_CALLBACK": lambda request: True,
+}
+
+INTERNAL_IPS = [
+    # локальный IP, если вы используете Docker, можно использовать localhost или 127.0.0.1
+    "127.0.0.1",
 ]
 
 ROOT_URLCONF = 'event_manager.urls'
 WSGI_APPLICATION = 'event_manager.wsgi.application'
 CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_CREDENTIALS = True
-# CSRF_TRUSTED_ORIGINS = ["*"]
+CSRF_TRUSTED_ORIGINS = ["http://localhost:63343"]
 
 # --------------------------
 # Database Configuration

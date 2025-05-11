@@ -1,18 +1,27 @@
 # views_api.py
 from rest_framework import viewsets, permissions, generics, status
+from rest_framework.generics import RetrieveAPIView, ListCreateAPIView, RetrieveUpdateDestroyAPIView
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework.authtoken.models import Token
-from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.permissions import IsAuthenticated, AllowAny, IsAuthenticatedOrReadOnly
 from django.contrib.auth.models import User
+from drf_spectacular.utils import extend_schema, OpenApiResponse
 from django.contrib.auth import authenticate, login, logout
-from .models import Event, Ticket, Category
+
+from .models import Event, Ticket
 from .serializers import EventSerializer, TicketSerializer, UserSerializer
+from .permissions import IsAdminOrReadOnly
+
 
 # ----------- AUTH -----------
 class RegisterAPIView(APIView):
     permission_classes = [AllowAny]
 
+    @extend_schema(
+        request=UserSerializer,  # You can customize request schema if necessary
+        responses={201: OpenApiResponse('User successfully registered'),
+                   400: OpenApiResponse('Error in registration')}
+    )
     def post(self, request):
         data = request.data
         try:
@@ -28,45 +37,42 @@ class RegisterAPIView(APIView):
             return Response({'error': str(e)}, status=400)
 
 
-class LoginAPIView(APIView):
-    permission_classes = [AllowAny]
-
-    def post(self, request):
-        username = request.data.get('username')
-        password = request.data.get('password')
-        user = authenticate(username=username, password=password)
-
-        if user:
-            login(request, user)
-            return Response({'message': 'Logged in successfully!'})
-        else:
-            return Response({'error': 'Invalid credentials'}, status=400)
-
-class LogoutAPIView(APIView):
+class ProfileAPIView(RetrieveAPIView):
     permission_classes = [IsAuthenticated]
+    serializer_class = UserSerializer
 
-    def post(self, request):
-        logout(request)
-        return Response({'message': 'Logged out successfully!'})
-
-
-class ProfileAPIView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request):
-        serializer = UserSerializer(request.user)
-        return Response(serializer.data)
-
+    @extend_schema(
+        responses={200: UserSerializer}  # Here you describe the response schema
+    )
+    def get_object(self):
+        # Return the current user (the authenticated user)
+        return self.request.user
 
 # ----------- EVENT -----------
-class EventViewSet(viewsets.ModelViewSet):
-    queryset = Event.objects.all().order_by('id')
+class EventListCreateAPIView(ListCreateAPIView):
+    queryset = Event.objects.all()
     serializer_class = EventSerializer
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    permission_classes = [IsAdminOrReadOnly]
 
+    @extend_schema(
+        request=EventSerializer,  # Describe the request schema for POST
+        responses={200: EventSerializer, 201: EventSerializer},  # Possible responses
+    )
     def perform_create(self, serializer):
         serializer.save(organizer=self.request.user)
 
+
+class EventDetailAPIView(RetrieveUpdateDestroyAPIView):
+    queryset = Event.objects.all()
+    serializer_class = EventSerializer
+    permission_classes = [IsAuthenticatedOrReadOnly]
+
+    @extend_schema(
+        responses={200: EventSerializer, 404: OpenApiResponse('Event not found')}
+    )
+    def get_object(self):
+        # Get event by ID
+        return super().get_object()
 
 # ----------- TICKET -----------
 class TicketViewSet(viewsets.ModelViewSet):
@@ -74,5 +80,9 @@ class TicketViewSet(viewsets.ModelViewSet):
     serializer_class = TicketSerializer
     permission_classes = [permissions.IsAuthenticated]
 
+    @extend_schema(
+        request=TicketSerializer,  # Describe the request schema for POST
+        responses={200: TicketSerializer, 201: TicketSerializer},
+    )
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
